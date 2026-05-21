@@ -24,7 +24,7 @@ jobs:
       
       - name: Build EXE
         run: |
-          pyinstaller --onefile --name xchina_downloader xchina_downloader.py
+          pyinstaller --onefile --noconsole --name xchina_downloader xchina_downloader.py
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
