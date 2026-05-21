@@ -213,6 +213,7 @@ class App:
 
         self.url_text = scrolledtext.ScrolledText(url_frame, height=5, font=('Consolas', 10))
         self.url_text.pack(fill='both', expand=True)
+        self._add_context_menu(self.url_text)
 
         # ── 代理设置 ──
         proxy_frame = ttk.Frame(root)
@@ -222,6 +223,7 @@ class App:
         self.proxy_var = tk.StringVar()
         self.proxy_entry = ttk.Entry(proxy_frame, textvariable=self.proxy_var, width=35)
         self.proxy_entry.pack(side='left', padx=5)
+        self._add_context_menu(self.proxy_entry)
         ttk.Label(proxy_frame, text="例: http://127.0.0.1:7890", foreground='gray').pack(side='left')
 
         # ── 按钮 ──
@@ -247,6 +249,7 @@ class App:
         self.log_text = scrolledtext.ScrolledText(log_frame, height=12, font=('Consolas', 9),
                                                    state='disabled')
         self.log_text.pack(fill='both', expand=True)
+        self._add_context_menu(self.log_text)
 
         # 状态栏
         self.status_var = tk.StringVar(value="就绪")
@@ -264,6 +267,48 @@ class App:
 
         # 关闭时保存配置
         root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def _add_context_menu(self, widget):
+        """为输入控件添加右键菜单（剪切/复制/粘贴/全选）"""
+        menu = tk.Menu(widget, tearoff=0)
+        menu.add_command(label="剪切", accelerator="Ctrl+X",
+                        command=lambda: widget.event_generate('<<Cut>>'))
+        menu.add_command(label="复制", accelerator="Ctrl+C",
+                        command=lambda: widget.event_generate('<<Copy>>'))
+        menu.add_command(label="粘贴", accelerator="Ctrl+V",
+                        command=lambda: self._safe_paste(widget))
+        menu.add_separator()
+        menu.add_command(label="全选", accelerator="Ctrl+A",
+                        command=lambda: self._select_all(widget))
+
+        def show_menu(event):
+            try:
+                menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                menu.grab_release()
+
+        widget.bind('<Button-3>', show_menu)
+        # macOS 兼容
+        widget.bind('<Button-2>', show_menu)
+
+    @staticmethod
+    def _safe_paste(widget):
+        """安全粘贴，处理禁用状态"""
+        try:
+            widget.event_generate('<<Paste>>')
+        except:
+            pass
+
+    @staticmethod
+    def _select_all(widget):
+        """全选文本"""
+        try:
+            widget.tag_add('sel', '1.0', 'end')
+        except:
+            try:
+                widget.select_range(0, 'end')
+            except:
+                pass
 
     def log(self, msg):
         self.log_text.configure(state='normal')
