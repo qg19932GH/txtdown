@@ -115,7 +115,7 @@ def get_chapters_from_toc(scraper, toc_url):
     return urls
 
 
-def download_one(scraper, url, log_callback=None, stop_event=None):
+def download_one(scraper, url, log_callback=None, stop_event=None, progress_callback=None):
     """下载单本小说，返回 (标题, 章节列表, 总字数)"""
 
     def log(msg):
@@ -155,6 +155,8 @@ def download_one(scraper, url, log_callback=None, stop_event=None):
             chapters.append((ctitle, content))
             fiction_title = ci.get('fiction_title', fiction_title)
             log(f"  [{ch_num}] {ctitle} ({len(content)}字)")
+            if progress_callback:
+                progress_callback(ch_num)
             nxt = ci.get('next_url')
             if nxt in visited:
                 break
@@ -183,6 +185,8 @@ def download_one(scraper, url, log_callback=None, stop_event=None):
             chapters.append((ctitle, content))
             fiction_title = ci.get('fiction_title', fiction_title)
             log(f"  [{i}/{total}] {ctitle} ({len(content)}字)")
+            if progress_callback:
+                progress_callback(i)
             time.sleep(0.3)
 
     return fiction_title, chapters, sum(len(c) for _, c in chapters)
@@ -376,6 +380,12 @@ class App:
 
         success_count = 0
         total_urls = len(urls)
+        chapters_downloaded = 0
+
+        def on_chapter_done(n):
+            nonlocal chapters_downloaded
+            chapters_downloaded = n
+            self.root.after(0, partial(self._update_progress, chapters_downloaded))
 
         for i, url in enumerate(urls, 1):
             if not self.running_event.is_set():
@@ -385,7 +395,6 @@ class App:
             self.root.after(0, self.log, f"\n{'='*50}")
             self.root.after(0, self.log, f"[{i}/{total_urls}] 开始下载")
             self.root.after(0, self.log, f"{'='*50}")
-            self.root.after(0, partial(self._update_progress, i, total_urls))
 
             def make_callback():
                 def cb(msg):
@@ -393,7 +402,7 @@ class App:
                 return cb
 
             cb = make_callback()
-            title, chapters, chars = download_one(self.scraper, url, log_callback=cb, stop_event=self.running_event)
+            title, chapters, chars = download_one(self.scraper, url, log_callback=cb, stop_event=self.running_event, progress_callback=on_chapter_done)
 
             if chapters:
                 path = save_txt(title, chapters)
@@ -420,8 +429,8 @@ class App:
             self.scraper.close()
             self.scraper = None
 
-    def _update_progress(self, current, total):
-        val = int(current / total * 100)
+    def _update_progress(self, chapters_downloaded):
+        val = min(99, chapters_downloaded * 2)
         self.progress['value'] = val
 
     def stop_download(self):
