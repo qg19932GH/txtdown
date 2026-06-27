@@ -12,6 +12,7 @@ import time
 import json
 import threading
 import tkinter as tk
+from functools import partial
 from tkinter import ttk, scrolledtext, messagebox
 from urllib.parse import urljoin
 
@@ -384,7 +385,7 @@ class App:
             self.root.after(0, self.log, f"\n{'='*50}")
             self.root.after(0, self.log, f"[{i}/{total_urls}] 开始下载")
             self.root.after(0, self.log, f"{'='*50}")
-            self.root.after(0, lambda p=i: self._update_progress(p, total_urls))
+            self.root.after(0, partial(self._update_progress, i, total_urls))
 
             def make_callback():
                 def cb(msg):
