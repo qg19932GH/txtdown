@@ -223,13 +223,27 @@ def extract_album_id(url):
 def parse_photo_info(html_content):
     """从相册页面解析标题和图片总数"""
     info = {}
-    m = re.search(r'<h1[^>]*>([^<]+)</h1>', html_content)
-    if m:
-        info['title'] = m.group(1).strip()
 
-    m = re.search(r'(\d+)P', html_content)
+    # 优先用 og:title 获取标题（不含分类信息），否则用 h1
+    m = re.search(r'<meta\s+property="og:title"\s+content="([^"]+)"', html_content)
+    if m:
+        title = m.group(1).split(' - ')[0].strip()
+        info['title'] = title
+    else:
+        m = re.search(r'<h1[^>]*>([^<]+)</h1>', html_content)
+        if m:
+            info['title'] = m.group(1).strip()
+
+    # 从 info-card 中的 <i class="fas fa-image"></i> 附近匹配图片数量
+    # 例如: <i class="fas fa-image"></i></div><div class="text">780P</div>
+    m = re.search(r'fa-image[^>]*>.*?</div>.*?<div[^>]*class="[^"]*text[^"]*"[^>]*>(\d+)P</div>', html_content, re.DOTALL)
     if m:
         info['count'] = int(m.group(1))
+    else:
+        # fallback: 匹配 text 类下的数字P
+        m = re.search(r'class="[^"]*text[^"]*"[^>]*>(\d{3,})P</div>', html_content)
+        if m:
+            info['count'] = int(m.group(1))
 
     m = re.search(r'<meta\s+property="og:image"\s+content="([^"]+)"', html_content)
     if m:
