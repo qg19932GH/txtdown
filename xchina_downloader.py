@@ -252,7 +252,8 @@ class App:
         self.stop_btn.pack(side='left')
 
         # 进度条
-        self.progress = ttk.Progressbar(root, mode='determinate')
+        self.progress = ttk.Progressbar(root, mode='determinate', maximum=100)
+        self.progress['value'] = 0
         self.progress.pack(fill='x', padx=15, pady=(0, 5))
 
         # 日志输出
@@ -357,6 +358,7 @@ class App:
         self.download_btn.configure(state='disabled')
         self.stop_btn.configure(state='normal')
         self.progress['value'] = 0
+        self.progress.update_idletasks()
         self.log_text.configure(state='normal')
         self.log_text.delete('1.0', 'end')
         self.log_text.configure(state='disabled')
@@ -419,7 +421,6 @@ class App:
 
     def _update_progress(self, current, total):
         val = int(current / total * 100)
-        self.progress['maximum'] = 100
         self.progress['value'] = val
 
     def stop_download(self):
