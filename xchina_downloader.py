@@ -236,12 +236,13 @@ def parse_photo_info(html_content):
 
     # 从 info-card 中的 <i class="fas fa-image"></i> 附近匹配图片数量
     # 例如: <i class="fas fa-image"></i></div><div class="text">780P</div>
-    m = re.search(r'fa-image[^>]*>.*?</div>.*?<div[^>]*class="[^"]*text[^"]*"[^>]*>(\d+)P</div>', html_content, re.DOTALL)
+    #      <div class="text">130P + 1V</div>
+    m = re.search(r'fa-image[^>]*>.*?</div>.*?<div[^>]*class="[^"]*text[^"]*"[^>]*>(\d+)P', html_content, re.DOTALL)
     if m:
         info['count'] = int(m.group(1))
     else:
         # fallback: 匹配 text 类下的数字P
-        m = re.search(r'class="[^"]*text[^"]*"[^>]*>(\d{3,})P</div>', html_content)
+        m = re.search(r'class="[^"]*text[^"]*"[^>]*>(\d{3,})P', html_content)
         if m:
             info['count'] = int(m.group(1))
 
@@ -285,6 +286,47 @@ def download_image(scraper, img_url, save_path, referer, log_callback=None, retr
     return False, 0
 
 
+def detect_image_path(scraper, html_content, log_callback=None):
+    """从 photoShow 页面检测图片路径和文件名格式"""
+    def log(msg):
+        if log_callback:
+            log_callback(msg)
+        else:
+            print(msg)
+
+    # 获取第一个 photoShow 链接
+    m = re.search(r'href="([^"]*photoShow\.html[^"]*)"', html_content)
+    if not m:
+        return None, None
+
+    ps_url = urljoin(BASE_URL, m.group(1))
+    ps_html = fetch(scraper, ps_url)
+    if not ps_html:
+        return None, None
+
+    # 从 photoShow 页面提取实际图片 URL
+    img_url = re.search(r'"url":"([^"]+)"', ps_html)
+    if not img_url:
+        img_url = re.search(r'preload[^>]*href="([^"]+)"', ps_html)
+    if not img_url:
+        img_url = re.search(r'<img\s+src="([^"]+)"', ps_html)
+
+    if not img_url:
+        return None, None
+
+    actual_url = img_url.group(1)
+    actual_url = actual_url.replace('\\/', '/')
+
+    # 提取路径格式: e.g. https://img.xchina.io/photos2/6584143fa3e3f/0001.jpg
+    m2 = re.search(r'(img\.xchina\.io/photos\d*)/([^/]+)/(\d+)\.\w+$', actual_url)
+    if m2:
+        base = f"https://{m2.group(1)}/{{album_id}}"
+        digits = len(m2.group(3))
+        return base, digits
+
+    return None, None
+
+
 def download_photo_album(scraper, url, output_dir='.', log_callback=None, stop_event=None, progress_callback=None):
     """下载整个套图，返回 (标题, 成功数, 总大小)"""
 
@@ -308,6 +350,11 @@ def download_photo_album(scraper, url, output_dir='.', log_callback=None, stop_e
     info = parse_photo_info(html_content)
     title = info.get('title', f'套图_{album_id}')
     count = info.get('count', 0)
+
+    # 检测图片路径和文件名格式
+    img_base_template, digits = detect_image_path(scraper, html_content, log_callback=log)
+    if img_base_template:
+        log(f"检测到图片路径: {img_base_template}, 文件名位数: {digits}")
 
     if count == 0:
         log("无法解析图片数量，尝试从分页提取...")
@@ -340,13 +387,18 @@ def download_photo_album(scraper, url, output_dir='.', log_callback=None, stop_e
     total_size = 0
     failed = []
 
+    # 使用检测到的路径和格式，否则用默认值
+    actual_img_base = img_base_template.replace('{album_id}', album_id) if img_base_template else f"{IMG_BASE}/{album_id}"
+    actual_digits = digits if digits else 5
+    filename_fmt = f"{{i:0{actual_digits}d}}.jpg"
+
     for i in range(1, count + 1):
         if stop_event and not stop_event.is_set():
             log("已停止")
             break
 
-        filename = f"{i:05d}.jpg"
-        img_url = f"{IMG_BASE}/{album_id}/{filename}"
+        filename = filename_fmt.format(i=i)
+        img_url = f"{actual_img_base}/{filename}"
         save_path = os.path.join(save_dir, filename)
 
         if os.path.exists(save_path) and os.path.getsize(save_path) > 5000:
