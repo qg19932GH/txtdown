@@ -8,3 +8,5 @@ xchina_config.json
 *.txt
 !requirements_xchina.txt
 !requirements_xphoto.txt
+opencode.json
+.vscode/
