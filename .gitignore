@@ -4,3 +4,6 @@ build/
 __pycache__/
 *.pyc
 /tmp/
+xchina_config.json
+*.txt
+!requirements_xchina.txt
