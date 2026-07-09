@@ -4,7 +4,6 @@ xChina 图片下载器 (GUI 版)
 从 photo/id-xxx.html 相册页面下载所有图片
 """
 
-import sys
 import re
 import os
 import time
@@ -12,7 +11,7 @@ import json
 import threading
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox, filedialog
-from urllib.parse import urljoin, urlparse, parse_qs, unquote
+from urllib.parse import urljoin
 from functools import partial
 
 import cloudscraper
@@ -277,7 +276,7 @@ def download_photo_set(scraper, start_url, output_dir, log_callback, stop_event,
 
                 html = fetch(scraper, full_url)
                 if not html:
-                    log(f"  获取失败")
+                    log("  获取失败")
                     break
 
                 thumbs = extract_thumbnails(html)
@@ -332,7 +331,7 @@ def download_photo_set(scraper, start_url, output_dir, log_callback, stop_event,
                     success_count += 1
                     total_size += size
                 else:
-                    log(f"    下载失败")
+                    log("    下载失败")
 
                 if progress_callback:
                     progress_callback(idx)
@@ -376,7 +375,7 @@ def _download_by_sequence(scraper, album_id, count, save_dir, referer_url, log, 
             success_count += 1
             total_size += size
         else:
-            log(f"    下载失败")
+            log("    下载失败")
 
         if progress_callback:
             progress_callback(i)

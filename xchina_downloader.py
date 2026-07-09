@@ -4,7 +4,6 @@ xChina 下载器 (GUI + CLI 版)
 支持小说和套图批量下载，可配置代理
 """
 
-import sys
 import re
 import os
 import html
@@ -57,7 +56,7 @@ def fetch(scraper, url, retries=3):
             resp = scraper.get(url, timeout=20)
             if resp.status_code == 200:
                 return resp.text
-        except Exception as e:
+        except Exception:
             if i < retries - 1:
                 wait = 2 ** i
                 time.sleep(wait)
@@ -272,7 +271,7 @@ def download_image(scraper, img_url, save_path, referer, log_callback=None, retr
                     return False, size
             elif resp.status_code == 403:
                 if log_callback:
-                    log_callback(f"    403 Forbidden，重试中...")
+                    log_callback("    403 Forbidden，重试中...")
                 time.sleep(1)
             else:
                 if log_callback:
@@ -659,7 +658,7 @@ class App:
                                                                 progress_callback=on_progress)
                 if count > 0:
                     mb = total_size / 1024 / 1024
-                    self.root.after(0, self.log, f"\n套图下载完成!")
+                    self.root.after(0, self.log, "\n套图下载完成!")
                     self.root.after(0, self.log, f"  {title} | {count}张 | {mb:.1f}MB")
                     success_count += 1
                 else:
