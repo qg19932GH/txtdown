@@ -441,7 +441,7 @@ def detect_url_type(url):
 
 # --- GUI ---
 
-class App:
+class ChinaApp:
     def __init__(self, root):
         self.root = root
         self.root.title("xChina 下载器")
@@ -703,7 +703,7 @@ class App:
 
 def main():
     root = tk.Tk()
-    App(root)
+    ChinaApp(root)
     root.mainloop()
 
 

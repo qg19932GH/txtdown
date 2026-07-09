@@ -385,7 +385,7 @@ def _download_by_sequence(scraper, album_id, count, save_dir, referer_url, log, 
     return success_count, total_size
 
 
-class App:
+class PhotoApp:
     def __init__(self, root):
         self.root = root
         self.root.title("xChina 图片下载器")
@@ -604,7 +604,7 @@ class App:
 
 def main():
     root = tk.Tk()
-    App(root)
+    PhotoApp(root)
     root.mainloop()
 
 

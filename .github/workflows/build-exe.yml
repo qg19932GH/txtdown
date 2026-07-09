@@ -1,9 +1,11 @@
-name: Build Windows EXE
+name: Build EXE
 
 on:
   push:
     paths:
+      - 'main.py'
       - 'xchina_downloader.py'
+      - 'xphoto_downloader.py'
       - '.github/workflows/build-exe.yml'
   workflow_dispatch:
 
@@ -12,22 +14,22 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install cloudscraper pyinstaller
-      
+
       - name: Build EXE
         run: |
-          pyinstaller --onefile --noconsole --name xchina_downloader xchina_downloader.py
-      
+          pyinstaller --onefile --windowed --name txtdown main.py
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: xchina_downloader-windows
-          path: dist/xchina_downloader.exe
+          name: txtdown-windows
+          path: dist/txtdown.exe
